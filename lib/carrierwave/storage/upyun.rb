@@ -22,7 +22,7 @@ module CarrierWave
     #
     #
     class UpYun < Abstract
-      
+
       class Connection
         def initialize(options={})
           @upyun_username = options[:upyun_username]
@@ -30,27 +30,27 @@ module CarrierWave
           @upyun_bucket = options[:upyun_bucket]
           @connection_options     = options[:connection_options] || {}
           @host = options[:api_host] || 'http://v0.api.upyun.com'
-          @http = RestClient::Resource.new("#{@host}/#{@upyun_bucket}", 
-                                            :user => @upyun_username, 
+          @http = RestClient::Resource.new("#{@host}/#{@upyun_bucket}",
+                                            :user => @upyun_username,
                                             :password => @upyun_password)
         end
-        
+
         def put(path, payload, headers = {})
           @http["#{escaped(path)}"].put(payload, headers)
         end
-        
+
         def get(path, headers = {})
           @http["#{escaped(path)}"].get(headers)
         end
-        
+
         def delete(path, headers = {})
           @http["#{escaped(path)}"].delete(headers)
         end
-        
+
         def post(path, payload, headers = {})
           @http["#{escaped(path)}"].post(payload, headers)
         end
-        
+
         def escaped(path)
           CGI.escape(path)
         end
@@ -91,15 +91,26 @@ module CarrierWave
         ##
         # Remove the file from Cloud Files
         #
-        def delete
-          begin
-            uy_connection.delete(@path)
-            true
-          rescue Exception => e
-            # If the file's not there, don't panic
-            nil
-          end
+       def delete
+         begin
+           uy_connection.delete(@path)
+           delete_empty_dirs
+           true
+         rescue Exception => e
+           # If the file's not there, don't panic
+           nil
+         end
+       end
+
+      def delete_empty_dirs
+        begin
+          uy_connection.delete(@uploader.store_dir)
+          true
+        rescue Exception => e
+          # If the file's not there, don't panic
+          nil
         end
+      end
 
         ##
         # Returns the url on the Cloud Files CDN.  Note that the parent container must be marked as
@@ -116,7 +127,7 @@ module CarrierWave
             nil
           end
         end
-        
+
         def content_type
           headers[:content_type]
         end
@@ -155,8 +166,8 @@ module CarrierWave
             if @uy_connection
               @uy_connection
             else
-              config = {:upyun_username => @uploader.upyun_username, 
-                :upyun_password => @uploader.upyun_password, 
+              config = {:upyun_username => @uploader.upyun_username,
+                :upyun_password => @uploader.upyun_password,
                 :upyun_bucket => @uploader.upyun_bucket
               }
               config[:api_host] = @uploader.upyun_api_host if @uploader.respond_to?(:upyun_api_host)
